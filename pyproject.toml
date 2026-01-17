@@ -1,0 +1,15 @@
+[tool.black]
+line-length = 100
+exclude = '''
+/(
+  \.venv
+  | \.tox
+  | migrations
+  | __pycache__
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_glob = ["*/migrations/*", ".venv/*", ".tox/*"]

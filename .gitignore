@@ -1,1 +1,7 @@
 *.log
+.venv/
+.tox/
+.pytest_cache/
+.pylint.d/
+__pycache__/
+.idea/

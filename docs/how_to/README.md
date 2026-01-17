@@ -8,3 +8,4 @@ and operational procedures.
 - `django-apps.md`: Add and register Django apps.
 - `gitignore.md`: Track git ignore rules for the repository.
 - `python-dependencies.md`: Install Python dependencies with `requirements.txt`.
+- `testing.md`: Run the pytest test suite.
