@@ -11,6 +11,8 @@ Pytest is configured in `pytest.ini` to discover `*_tests.py` files.
 
 Run static checks and formatting verification (black, isort, flake8, pylint).
 Black and isort use settings in `pyproject.toml`.
+Flake8 defaults to single-worker mode; set `FLAKE8_JOBS` to a higher number if
+your environment supports multiprocessing semaphores.
 
 Install the pre-commit hook to run black and isort on staged files:
 

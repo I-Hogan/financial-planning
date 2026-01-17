@@ -10,6 +10,12 @@ Install Python dependencies:
 ./scripts/setup.sh
 ```
 
+Launch Codex with the project virtual environment (updates `codex-cli` via npm):
+
+```bash
+./scripts/codex.sh
+```
+
 Run database migrations:
 
 ```bash
@@ -28,6 +34,8 @@ Pytest discovery is configured in `pytest.ini` to pick up `*_tests.py` files.
 
 Run static checks and formatting verification (black, isort, flake8, pylint).
 Black and isort use settings in `pyproject.toml`.
+Flake8 defaults to single-worker mode; set `FLAKE8_JOBS` higher if your
+environment supports multiprocessing semaphores.
 
 Install the pre-commit hook to run black and isort on staged files:
 

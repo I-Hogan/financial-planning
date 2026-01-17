@@ -11,7 +11,8 @@ if [ "${SKIP_FORMAT_CHECKS:-0}" -ne 1 ]; then
   python3 -m black --check "${targets[@]}" || fail=1
   python3 -m isort --check-only "${targets[@]}" || fail=1
 fi
-python3 -m flake8 "${targets[@]}" || fail=1
+flake8_jobs="${FLAKE8_JOBS:-1}"
+python3 -m flake8 --jobs "$flake8_jobs" "${targets[@]}" || fail=1
 python3 -m pylint "${targets[@]}" || fail=1
 
 if [ "$fail" -ne 0 ]; then

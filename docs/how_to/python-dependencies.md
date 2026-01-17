@@ -11,3 +11,10 @@ dependencies like black, flake8, isort, pylint, and pre-commit.
 ```bash
 pip install -r requirements.txt
 ```
+
+Use the Codex launcher to ensure the virtual environment is created, Codex is
+up to date via npm, and the CLI is launched:
+
+```bash
+./scripts/codex.sh
+```
