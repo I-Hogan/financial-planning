@@ -4,6 +4,7 @@ Use the test script to run the project's pytest suite in parallel.
 Unit tests live alongside the modules they validate, named
 `<file_name>_tests.py` (for example, `financial_planner/tax_calculator_tests.py`).
 Pytest is configured in `pytest.ini` to discover `*_tests.py` files.
+Experiment scripts also have targeted tests under `financial_planner/experiments/`.
 
 ```bash
 ./scripts/test.sh

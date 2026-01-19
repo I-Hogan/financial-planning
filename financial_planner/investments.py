@@ -153,13 +153,20 @@ class InvestmentAccount(ABC):
     def calculate_tax(self, returns: ReturnBreakdown) -> TaxImpact:
         """Calculate tax impact based on deposits, withdrawals, and returns."""
 
-    def increment_year(self, *, previous_year_income: Optional[float] = None) -> AccountYearSummary:
+    def increment_year(
+        self,
+        *,
+        previous_year_income: Optional[float] = None,
+        contribution_limit_adjustment: float = 1.0,
+    ) -> AccountYearSummary:
         """Advance the account by one year and reset annual trackers."""
+        if contribution_limit_adjustment <= 0:
+            raise ValueError("Inflation adjustment must be positive.")
         returns = self.calculate_returns()
         self.update_account(returns)
         tax_impact = self.calculate_tax(returns)
         self.year_start_balance = self.balance
-        self._add_contribution_room(previous_year_income)
+        self._add_contribution_room(previous_year_income, contribution_limit_adjustment)
         self.deposits = 0.0
         self.withdrawals = 0.0
         self._reset_year_tracking()
@@ -174,9 +181,12 @@ class InvestmentAccount(ABC):
     def _reset_year_tracking(self) -> None:
         """Reset any subclass-specific tracking at year end."""
 
-    def _add_contribution_room(self, previous_year_income: Optional[float]) -> None:
+    def _add_contribution_room(
+        self, previous_year_income: Optional[float], contribution_limit_adjustment: float
+    ) -> None:
         """Update contribution room for the next year if applicable."""
         _ = previous_year_income
+        _ = contribution_limit_adjustment
 
     @staticmethod
     def _validate_positive_amount(amount: float) -> None:
@@ -203,13 +213,14 @@ class TFSA(InvestmentAccount):
     def calculate_tax(self, returns: ReturnBreakdown) -> TaxImpact:
         return TaxImpact()
 
-    def _add_contribution_room(self, previous_year_income: Optional[float]) -> None:
+    def _add_contribution_room(
+        self, previous_year_income: Optional[float], contribution_limit_adjustment: float
+    ) -> None:
         """Increase TFSA contribution room by the annual limit."""
         if self.contribution_room is None:
             self.contribution_room = 0.0
-        self.contribution_room = _round_money(
-            self.contribution_room + TFSA_ANNUAL_CONTRIBUTION_LIMIT + self.withdrawals
-        )
+        limit = _round_money(TFSA_ANNUAL_CONTRIBUTION_LIMIT * contribution_limit_adjustment)
+        self.contribution_room = _round_money(self.contribution_room + limit + self.withdrawals)
 
 
 class RRSP(InvestmentAccount):
@@ -234,13 +245,14 @@ class RRSP(InvestmentAccount):
             deduction=_round_money(self.deposits),
         )
 
-    def _add_contribution_room(self, previous_year_income: Optional[float]) -> None:
+    def _add_contribution_room(
+        self, previous_year_income: Optional[float], contribution_limit_adjustment: float
+    ) -> None:
         """Increase RRSP contribution room using prior-year income."""
         if previous_year_income is None:
             previous_year_income = 0.0
-        new_room = min(
-            previous_year_income * RRSP_CONTRIBUTION_RATE, RRSP_ANNUAL_CONTRIBUTION_LIMIT
-        )
+        limit = _round_money(RRSP_ANNUAL_CONTRIBUTION_LIMIT * contribution_limit_adjustment)
+        new_room = min(previous_year_income * RRSP_CONTRIBUTION_RATE, limit)
         if self.contribution_room is None:
             self.contribution_room = 0.0
         self.contribution_room = _round_money(self.contribution_room + new_room)
@@ -336,15 +348,30 @@ class Investments:
             account.deposit(deposit_amount)
         return remaining
 
-    def increment_year(self, *, annual_income: float = 0.0) -> InvestmentYearResult:
+    def increment_year(
+        self,
+        *,
+        annual_income: float = 0.0,
+        inflation_adjustment: float = 1.0,
+        next_year_inflation_adjustment: Optional[float] = None,
+    ) -> InvestmentYearResult:
         """Increment the year for all accounts and return tax impacts."""
         if annual_income < 0:
             raise ValueError("Annual income cannot be negative.")
+        if inflation_adjustment <= 0:
+            raise ValueError("Inflation adjustment must be positive.")
+        if next_year_inflation_adjustment is None:
+            next_year_inflation_adjustment = inflation_adjustment
+        if next_year_inflation_adjustment <= 0:
+            raise ValueError("Inflation adjustment must be positive.")
         account_summaries: Dict[str, AccountYearSummary] = {}
         taxable_income = _round_money(annual_income)
         deductions = 0.0
         for name, account in self._accounts_by_name().items():
-            summary = account.increment_year(previous_year_income=annual_income)
+            summary = account.increment_year(
+                previous_year_income=annual_income,
+                contribution_limit_adjustment=next_year_inflation_adjustment,
+            )
             account_summaries[name] = summary
             taxable_income += summary.tax_impact.taxable_income
             deductions += summary.tax_impact.deduction
@@ -352,7 +379,10 @@ class Investments:
         deductions = _round_money(deductions)
         net_taxable_income = _round_money(max(0.0, taxable_income - deductions))
         tax_owed = (
-            tax_calculator.calculate_ontario_combined_income_tax(net_taxable_income)
+            tax_calculator.calculate_ontario_combined_income_tax(
+                net_taxable_income,
+                inflation_adjustment=inflation_adjustment,
+            )
             if net_taxable_income > 0
             else 0.0
         )
@@ -364,21 +394,85 @@ class Investments:
         )
         return InvestmentYearResult(tax_summary=tax_summary, account_summaries=account_summaries)
 
-    def total_value(self) -> float:
-        """Return the after-tax value if all accounts were liquidated today."""
+    def total_value(
+        self, *, inflation_adjustment: float = 1.0, liquidation_years: int = 1
+    ) -> float:
+        """Return the after-tax value if all accounts were liquidated."""
+        if inflation_adjustment <= 0:
+            raise ValueError("Inflation adjustment must be positive.")
+        if liquidation_years <= 0:
+            raise ValueError("Liquidation years must be positive.")
+        total_balance = _round_money(
+            self.tfsa.balance + self.rrsp.balance + self.unregistered.balance
+        )
+        tax_owed = self._estimate_liquidation_tax(
+            inflation_adjustment=inflation_adjustment,
+            liquidation_years=liquidation_years,
+        )
+        return _round_money(total_balance - tax_owed)
+
+    def _estimate_liquidation_tax(
+        self, *, inflation_adjustment: float, liquidation_years: int
+    ) -> float:
+        if liquidation_years == 1:
+            return self._liquidation_tax_single_year(inflation_adjustment)
+        return self._liquidation_tax_spread_years(
+            inflation_adjustment=inflation_adjustment,
+            liquidation_years=liquidation_years,
+        )
+
+    def _liquidation_tax_single_year(self, inflation_adjustment: float) -> float:
         rrsp_balance = self.rrsp.balance
         unregistered_gain = _round_money(self.unregistered.balance - self.unregistered.cost_basis)
         taxable_unregistered_gain = max(0.0, unregistered_gain) * CAPITAL_GAINS_INCLUSION_RATE
         taxable_income = _round_money(rrsp_balance + taxable_unregistered_gain)
-        tax_owed = (
-            tax_calculator.calculate_ontario_combined_income_tax(taxable_income)
-            if taxable_income > 0
-            else 0.0
+        if taxable_income <= 0:
+            return 0.0
+        return _round_money(
+            tax_calculator.calculate_ontario_combined_income_tax(
+                taxable_income, inflation_adjustment=inflation_adjustment
+            )
         )
-        total_balance = _round_money(
-            self.tfsa.balance + self.rrsp.balance + self.unregistered.balance
-        )
-        return _round_money(total_balance - tax_owed)
+
+    def _liquidation_tax_spread_years(
+        self, *, inflation_adjustment: float, liquidation_years: int
+    ) -> float:
+        remaining_rrsp = self.rrsp.balance
+        remaining_unregistered = self.unregistered.balance
+        remaining_cost_basis = self.unregistered.cost_basis
+        total_tax = 0.0
+
+        for years_left in range(liquidation_years, 0, -1):
+            rrsp_withdrawal = _round_money(remaining_rrsp / years_left)
+            realized_gain, remaining_unregistered, remaining_cost_basis = (
+                self._apply_unregistered_withdrawal(
+                    remaining_unregistered, remaining_cost_basis, years_left
+                )
+            )
+
+            taxable_unregistered_gain = max(0.0, realized_gain) * CAPITAL_GAINS_INCLUSION_RATE
+            taxable_income = _round_money(rrsp_withdrawal + taxable_unregistered_gain)
+            if taxable_income > 0:
+                tax = tax_calculator.calculate_ontario_combined_income_tax(
+                    taxable_income, inflation_adjustment=inflation_adjustment
+                )
+                total_tax = _round_money(total_tax + tax)
+            remaining_rrsp = _round_money(remaining_rrsp - rrsp_withdrawal)
+
+        return total_tax
+
+    def _apply_unregistered_withdrawal(
+        self, remaining_unregistered: float, remaining_cost_basis: float, years_left: int
+    ) -> tuple[float, float, float]:
+        unregistered_withdrawal = _round_money(remaining_unregistered / years_left)
+        if remaining_unregistered <= 0 or unregistered_withdrawal <= 0:
+            return 0.0, remaining_unregistered, remaining_cost_basis
+        proportion = unregistered_withdrawal / remaining_unregistered
+        cost_basis_reduction = _round_money(remaining_cost_basis * proportion)
+        realized_gain = _round_money(unregistered_withdrawal - cost_basis_reduction)
+        remaining_cost_basis = _round_money(remaining_cost_basis - cost_basis_reduction)
+        remaining_unregistered = _round_money(remaining_unregistered - unregistered_withdrawal)
+        return realized_gain, remaining_unregistered, remaining_cost_basis
 
     def _accounts_by_name(self) -> Dict[str, InvestmentAccount]:
         return {"tfsa": self.tfsa, "rrsp": self.rrsp, "unregistered": self.unregistered}

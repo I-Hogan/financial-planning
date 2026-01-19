@@ -8,7 +8,9 @@ bracket tables from the project request. The associated unit tests live in
 
 If bracket values change in future years, update the constants in
 `financial_planner/tax_constants.py` and refresh the expected values in
-`financial_planner/tax_calculator_tests.py`.
+`financial_planner/tax_calculator_tests.py`. The calculator also supports
+inflation-adjusted brackets by passing an `inflation_adjustment` multiplier
+to the tax helper functions.
 
 Investment tax policy defaults (for example, capital gains inclusion rates
 and default contribution limits) are also defined in

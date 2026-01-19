@@ -9,6 +9,7 @@ from financial_planner.tax_constants import (
 ANNUAL_INCOME = 120_000.0
 ANNUAL_INVESTMENT_CONTRIBUTION = 40_000.0
 ANNUAL_SPENDING = 40_000.0
+INFLATION_RATE = 0.02
 
 # Initial account balances.
 INITIAL_TFSA_BALANCE = 10_000.0
@@ -27,6 +28,7 @@ GLOBAL_EQUITY_INCOME_RATE = 0.01
 
 # Experiment horizon.
 YEARS = 30
+LIQUIDATION_YEARS = 25
 
 # Account funding order.
 ACCOUNT_ORDER = ("tfsa", "rrsp", "unregistered")

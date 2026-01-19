@@ -58,3 +58,19 @@ def test_ontario_bracket_boundary():
 def test_canada_bracket_boundary():
     """Verify federal tax at a bracket boundary."""
     assert tax_calculator.calculate_canada_income_tax(58_523) == pytest.approx(8193.22)
+
+
+def test_ontario_tax_inflation_adjustment_scales_brackets():
+    """Inflation adjustment should scale bracket thresholds consistently."""
+    adjustment = 1.1
+    income = 53_891 * adjustment
+    expected = 2721.5 * adjustment
+    assert tax_calculator.calculate_ontario_income_tax(
+        income, inflation_adjustment=adjustment
+    ) == pytest.approx(expected)
+
+
+def test_inflation_adjustment_must_be_positive():
+    """Reject non-positive inflation adjustments."""
+    with pytest.raises(ValueError):
+        tax_calculator.calculate_ontario_income_tax(50_000, inflation_adjustment=0)

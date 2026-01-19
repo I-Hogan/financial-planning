@@ -1,6 +1,7 @@
 """Tax policy constants for calculations."""
 
 # 2026 tax brackets (CAD). Source: user-provided 2026 bracket tables.
+# These values are treated as base-year amounts when applying inflation adjustments.
 ONTARIO_TAX_BRACKETS = (
     (53891, 0.0505),
     (107785, 0.0915),
@@ -17,7 +18,7 @@ CANADA_TAX_BRACKETS = (
     (None, 0.33),
 )
 
-# Investment tax policy defaults.
+# Investment tax policy defaults (base-year values).
 CAPITAL_GAINS_INCLUSION_RATE = 0.5
 TFSA_ANNUAL_CONTRIBUTION_LIMIT = 7000.0
 RRSP_ANNUAL_CONTRIBUTION_LIMIT = 33810.0

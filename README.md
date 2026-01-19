@@ -75,7 +75,10 @@ python -m financial_planner.experiments.investment_growth
 Edit `financial_planner/experiments/investment_growth_config.py` to adjust the
 assumptions. If present, `financial_planner/experiments/investment_growth_config_personal.py`
 is used instead for local overrides. The script prints a formatted table of
-yearly results.
+yearly results in year-0 dollars, using `INFLATION_RATE` to index annual cash
+flows, contribution limits, and tax brackets. Adjust `LIQUIDATION_YEARS` to
+spread investment liquidation over multiple years when estimating after-tax
+values.
 
 ## Repository Hygiene
 
