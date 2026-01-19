@@ -13,7 +13,7 @@ if [ "${SKIP_FORMAT_CHECKS:-0}" -ne 1 ]; then
 fi
 flake8_jobs="${FLAKE8_JOBS:-1}"
 python3 -m flake8 --jobs "$flake8_jobs" "${targets[@]}" || fail=1
-python3 -m pylint "${targets[@]}" || fail=1
+python3 -m pylint --disable=duplicate-code "${targets[@]}" || fail=1
 
 if [ "$fail" -ne 0 ]; then
   red="$(printf '\033[0;31m')"

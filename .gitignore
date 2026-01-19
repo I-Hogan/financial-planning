@@ -5,3 +5,4 @@
 .pylint.d/
 __pycache__/
 .idea/
+*config_personal.py

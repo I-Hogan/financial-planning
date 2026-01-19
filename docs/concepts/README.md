@@ -5,4 +5,5 @@ background explanations that support understanding the project.
 
 ## Index
 
+- `investments.md`: Overview of investment account behaviors and tax treatment.
 - `tax-calculation.md`: Overview of tax bracket assumptions used in calculations.

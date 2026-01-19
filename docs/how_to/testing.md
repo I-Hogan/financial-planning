@@ -13,6 +13,7 @@ Run static checks and formatting verification (black, isort, flake8, pylint).
 Black and isort use settings in `pyproject.toml`.
 Flake8 defaults to single-worker mode; set `FLAKE8_JOBS` to a higher number if
 your environment supports multiprocessing semaphores.
+Pylint runs with the duplicate-code check disabled via `scripts/static.sh`.
 
 Install the pre-commit hook to run black and isort on staged files:
 

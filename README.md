@@ -62,6 +62,20 @@ python manage.py runserver
 ## Apps
 
 - `financial_planner`: Core domain app for financial planning features.
+- `financial_planner/investments.py`: Investment account models and portfolio calculations.
+
+## Experiments
+
+Run the investment growth experiment script:
+
+```bash
+python -m financial_planner.experiments.investment_growth
+```
+
+Edit `financial_planner/experiments/investment_growth_config.py` to adjust the
+assumptions. If present, `financial_planner/experiments/investment_growth_config_personal.py`
+is used instead for local overrides. The script prints a formatted table of
+yearly results.
 
 ## Repository Hygiene
 

@@ -2,7 +2,7 @@
 
 args=("$@")
 if [ "$#" -eq 0 ]; then
-  args=(financial_planner/tax_calculator_tests.py)
+  args=(.)
 fi
 
 python3 -m pytest -n auto "${args[@]}"
