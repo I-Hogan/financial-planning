@@ -43,7 +43,8 @@ Install the pre-commit hook to run black and isort on staged files:
 pre-commit install
 ```
 
-Run the commit preparation script to format, test, and lint before commits:
+Run the commit preparation script to format, test, and lint before commits
+(typical runtime: ~1 minute):
 
 ```bash
 ./scripts/commit_prep.sh
@@ -63,6 +64,7 @@ python manage.py runserver
 
 - `financial_planner`: Core domain app for financial planning features.
 - `financial_planner/investments.py`: Investment account models and portfolio calculations.
+- `financial_planner/timeline.py`: Timeline buckets and event-driven simulation models.
 
 ## Experiments
 
@@ -74,11 +76,13 @@ python -m financial_planner.experiments.investment_growth
 
 Edit `financial_planner/experiments/investment_growth_config.py` to adjust the
 assumptions. If present, `financial_planner/experiments/investment_growth_config_personal.py`
-is used instead for local overrides. The script prints a formatted table of
-yearly results in year-0 dollars, using `INFLATION_RATE` to index annual cash
-flows, contribution limits, and tax brackets. Adjust `LIQUIDATION_YEARS` to
-spread investment liquidation over multiple years when estimating after-tax
-values.
+is used instead for local overrides, falling back to defaults for any missing
+values. The script prints a formatted table of yearly results in year-0 dollars,
+using `INFLATION_RATE` to index annual cash flows, contribution limits, and tax
+brackets. Adjust `LIQUIDATION_YEARS` to spread investment liquidation over
+multiple years when estimating after-tax values.
+The experiment builds a timeline from `START_AGE` to `END_AGE`, applying
+income, spending, and contribution events at the start of each year.
 
 ## Repository Hygiene
 

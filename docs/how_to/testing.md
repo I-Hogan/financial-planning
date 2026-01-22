@@ -22,7 +22,8 @@ Install the pre-commit hook to run black and isort on staged files:
 pre-commit install
 ```
 
-Run the commit preparation script to format, test, and lint before commits:
+Run the commit preparation script to format, test, and lint before commits
+(typical runtime: ~1 minute):
 
 ```bash
 ./scripts/commit_prep.sh

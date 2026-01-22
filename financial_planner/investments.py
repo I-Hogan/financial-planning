@@ -348,6 +348,30 @@ class Investments:
             account.deposit(deposit_amount)
         return remaining
 
+    def withdraw(self, amount: float, account_order: Iterable[AccountSelector]) -> float:
+        """Withdraw funds using the provided account order, returning leftovers."""
+        if amount < 0:
+            raise ValueError("Amount must be non-negative.")
+        remaining = _round_money(amount)
+        planned_withdrawals = []
+        planned_used: Dict[InvestmentAccount, float] = {}
+        for entry in account_order:
+            if remaining <= 0:
+                break
+            account = self._resolve_account(entry)
+            available = account.balance - planned_used.get(account, 0.0)
+            if available <= 0:
+                continue
+            withdrawal_amount = min(remaining, available)
+            planned_withdrawals.append((account, withdrawal_amount))
+            planned_used[account] = planned_used.get(account, 0.0) + withdrawal_amount
+            remaining = _round_money(remaining - withdrawal_amount)
+        if remaining > 0:
+            raise ValueError("Withdrawal exceeds available balance.")
+        for account, withdrawal_amount in planned_withdrawals:
+            account.withdrawal(withdrawal_amount)
+        return remaining
+
     def increment_year(
         self,
         *,

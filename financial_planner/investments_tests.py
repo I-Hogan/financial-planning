@@ -47,6 +47,39 @@ def test_investments_deposit_respects_order_and_room():
         investments.deposit(1000, ["tfsa", "rrsp"])
 
 
+def test_investments_withdraw_respects_order_and_balance():
+    """Withdrawals should follow priority ordering and balances."""
+    investments = _make_investments()
+    investments.deposit(15000, ["tfsa", "rrsp", "unregistered"])
+
+    remaining = investments.withdraw(7000, ["rrsp", "tfsa"])
+
+    assert remaining == 0
+    assert investments.rrsp.balance == pytest.approx(0)
+    assert investments.tfsa.balance == pytest.approx(4000)
+    assert investments.unregistered.balance == pytest.approx(4000)
+
+
+def test_investments_withdraw_raises_when_balance_insufficient():
+    """Withdrawals should fail when total balances are insufficient."""
+    investments = _make_investments()
+    investments.deposit(15000, ["tfsa", "rrsp", "unregistered"])
+    starting_balances = (
+        investments.tfsa.balance,
+        investments.rrsp.balance,
+        investments.unregistered.balance,
+        investments.unregistered.cost_basis,
+    )
+
+    with pytest.raises(ValueError):
+        investments.withdraw(20000, ["tfsa", "rrsp", "unregistered"])
+
+    assert investments.tfsa.balance == pytest.approx(starting_balances[0])
+    assert investments.rrsp.balance == pytest.approx(starting_balances[1])
+    assert investments.unregistered.balance == pytest.approx(starting_balances[2])
+    assert investments.unregistered.cost_basis == pytest.approx(starting_balances[3])
+
+
 def test_increment_year_calculates_returns_and_tax():
     """Incrementing a year should update balances and tax inputs."""
     investments = _make_investments()

@@ -40,7 +40,8 @@ def test_experiment_outputs_year_zero_dollars(monkeypatch, capsys):
     """Experiment output should deflate values back to year-zero dollars."""
     _set_config(
         monkeypatch,
-        YEARS=2,
+        START_AGE=30,
+        END_AGE=31,
         INFLATION_RATE=0.1,
         ANNUAL_INCOME=0.0,
         ANNUAL_INVESTMENT_CONTRIBUTION=0.0,
@@ -61,18 +62,19 @@ def test_experiment_outputs_year_zero_dollars(monkeypatch, capsys):
 
     output = capsys.readouterr().out
     rows = _parse_table_rows(output)
-    year1 = next(row for row in rows if row[0] == "1")
-    year2 = next(row for row in rows if row[0] == "2")
+    age1 = next(row for row in rows if row[0] == "30")
+    age2 = next(row for row in rows if row[0] == "31")
 
-    assert year1[2] == "$100.00"
-    assert year2[2] == "$90.91"
+    assert age1[2] == "$100.00"
+    assert age2[2] == "$90.91"
 
 
 def test_net_worth_invariant_without_tax_or_returns(monkeypatch):
     """Net worth should not depend on account order without tax or returns."""
     _set_config(
         monkeypatch,
-        YEARS=1,
+        START_AGE=30,
+        END_AGE=30,
         INFLATION_RATE=0.0,
         ANNUAL_INCOME=0.0,
         ANNUAL_INVESTMENT_CONTRIBUTION=1000.0,
@@ -89,42 +91,11 @@ def test_net_worth_invariant_without_tax_or_returns(monkeypatch):
     )
 
     def _simulate(order):
-        investments = investment_growth._build_investments()
-        free_cash = investment_growth.config.INITIAL_FREE_CASH
-        for year in range(1, investment_growth.config.YEARS + 1):
-            year_index = year - 1
-            inflation_factor = investment_growth._inflation_factor(year_index)
-            next_year_factor = investment_growth._inflation_factor(year_index + 1)
-            annual_income = investment_growth._round_money(
-                investment_growth.config.ANNUAL_INCOME * inflation_factor
-            )
-            annual_contribution = investment_growth._round_money(
-                investment_growth.config.ANNUAL_INVESTMENT_CONTRIBUTION * inflation_factor
-            )
-            annual_spending = investment_growth._round_money(
-                investment_growth.config.ANNUAL_SPENDING * inflation_factor
-            )
-
-            free_cash = investment_growth._round_money(free_cash + annual_income)
-            old_order = investment_growth.config.ACCOUNT_ORDER
-            investment_growth.config.ACCOUNT_ORDER = order
-            try:
-                free_cash = investment_growth._apply_contributions(
-                    investments, free_cash, annual_contribution
-                )
-            finally:
-                investment_growth.config.ACCOUNT_ORDER = old_order
-            free_cash = investment_growth._round_money(free_cash - annual_spending)
-
-            result = investments.increment_year(
-                annual_income=annual_income,
-                inflation_adjustment=inflation_factor,
-                next_year_inflation_adjustment=next_year_factor,
-            )
-            free_cash = investment_growth._round_money(free_cash - result.tax_summary.tax_owed)
-
-        total_investments = investments.total_value(inflation_adjustment=1.0)
-        return investment_growth._round_money(free_cash + total_investments)
+        _set_config(monkeypatch, ACCOUNT_ORDER=order)
+        timeline = investment_growth._build_timeline()
+        state = investment_growth._build_state()
+        summaries = investment_growth._simulate(timeline, state)
+        return summaries[-1].net_worth
 
     tfsa_net_worth = _simulate(("tfsa",))
     unregistered_net_worth = _simulate(("unregistered",))
