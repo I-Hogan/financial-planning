@@ -149,7 +149,7 @@ def test_set_withdrawal_policy_event_updates_state():
 
 def test_set_retirement_event_marks_state_and_policy():
     """Retirement events should mark retired and set withdrawal policy."""
-    state = SimulationState(investments=Investments())
+    state = SimulationState(investments=Investments(), annual_income=2000.0)
     withdrawal_policy = WithdrawalPolicy(
         annual_withdrawal=1500,
         account_order=("tfsa",),
@@ -160,6 +160,7 @@ def test_set_retirement_event_marks_state_and_policy():
     event.resolve(state, _context(2026, 2026))
 
     assert state.retired is True
+    assert state.annual_income == pytest.approx(0.0)
     assert state.withdrawal_policy == withdrawal_policy
 
 

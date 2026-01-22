@@ -193,6 +193,7 @@ class SetRetirementEvent(Event):
     def resolve(self, state: SimulationState, context: YearContext) -> None:
         _ = context
         state.retired = True
+        state.annual_income = 0.0
         if self.withdrawal_policy is not None:
             state.withdrawal_policy = self.withdrawal_policy
 

@@ -18,6 +18,7 @@ from financial_planner.timeline import (
     SetDepositPolicyEvent,
     SetFreeCashEvent,
     SetInvestmentAccountValuesEvent,
+    SetRetirementEvent,
     SimulationState,
     Timeline,
     YearContext,
@@ -93,6 +94,7 @@ def _build_investments() -> Investments:
 def _build_timeline() -> Timeline:
     """Build the timeline with configured events."""
     start_age, end_age = _age_range()
+    retirement_age = config.RETIREMENT_AGE
     timeline = Timeline(start_year=start_age, end_year=end_age)
 
     timeline.add_event(
@@ -116,14 +118,29 @@ def _build_timeline() -> Timeline:
         amount=config.ANNUAL_SPENDING,
         inflation_adjusted=True,
     )
+    spending_change_event = SetAnnualSpendingEvent(
+        amount=config.SPENDING_CHANGE_ANNUAL_SPENDING,
+        inflation_adjusted=True,
+    )
     deposit_event = SetDepositPolicyEvent(
         annual_contribution=config.ANNUAL_INVESTMENT_CONTRIBUTION,
         account_order=config.ACCOUNT_ORDER,
         inflation_adjusted=True,
     )
-    timeline.add_event_range(start_age, end_age, income_event)
-    timeline.add_event_range(start_age, end_age, spending_event)
+    income_end_age = min(end_age, retirement_age - 1)
+    if income_end_age >= start_age:
+        timeline.add_event_range(start_age, income_end_age, income_event)
+    spending_change_age = config.SPENDING_CHANGE_AGE
+    if spending_change_age <= start_age:
+        timeline.add_event_range(start_age, end_age, spending_change_event)
+    elif spending_change_age > end_age:
+        timeline.add_event_range(start_age, end_age, spending_event)
+    else:
+        timeline.add_event_range(start_age, spending_change_age - 1, spending_event)
+        timeline.add_event_range(spending_change_age, end_age, spending_change_event)
     timeline.add_event_range(start_age, end_age, deposit_event)
+    if start_age <= retirement_age <= end_age:
+        timeline.add_event(retirement_age, SetRetirementEvent())
 
     return timeline
 

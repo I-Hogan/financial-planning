@@ -81,8 +81,14 @@ values. The script prints a formatted table of yearly results in year-0 dollars,
 using `INFLATION_RATE` to index annual cash flows, contribution limits, and tax
 brackets. Adjust `LIQUIDATION_YEARS` to spread investment liquidation over
 multiple years when estimating after-tax values.
+When adding new settings, update both config files so personal overrides stay
+explicit.
+Use `SPENDING_CHANGE_AGE` and `SPENDING_CHANGE_ANNUAL_SPENDING` to raise annual
+spending at a specific age.
 The experiment builds a timeline from `START_AGE` to `END_AGE`, applying
 income, spending, and contribution events at the start of each year.
+Retirement is modeled by adding a `SetRetirementEvent` at `RETIREMENT_AGE`,
+which zeroes annual income from that point onward.
 
 ## Repository Hygiene
 

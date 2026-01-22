@@ -20,8 +20,8 @@ The simulation framework is built around timeline and event models in
   adjustments using the year context.
 - `SetDepositPolicyEvent` and `SetWithdrawalPolicyEvent` define annual policies
   for contributions and withdrawals.
-- `SetRetirementEvent` marks the state as retired and can update withdrawal
-  policy.
+- `SetRetirementEvent` marks the state as retired, zeroes annual income, and can
+  update withdrawal policy.
 - `SetInvestmentAccountValuesEvent` and `SetFreeCashEvent` initialize balances
   and cash at the start of the timeline.
 
